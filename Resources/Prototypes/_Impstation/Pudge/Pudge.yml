@@ -1,0 +1,98 @@
+- type: entity
+  name: Pudge
+  id: MobDotaPudge
+  parent: MobSpaceBasic
+  description: watch out for his brown hole
+  components:
+  - type: Sprite
+    drawdepth: Mobs
+    sprite: _Impstation/Pudge/pudge.rsi
+    layers:
+    - map: [ "enum.DamageStateVisualLayers.Base" ]
+      state: pudge
+    - map: [ "enum.DamageStateVisualLayers.BaseUnshaded" ]
+      state: glow
+      shader: unshaded
+  - type: Butcherable
+    spawned:
+    - id: FoodMeatBear
+      amount: 3
+    - id: MaterialHideBear
+      amount: 1
+      prob: 0.3
+  - type: ReplacementAccent
+    accent: genericAggressive
+  - type: Vocal
+    sounds:
+      Unsexed: Bear
+  - type: InteractionPopup
+    successChance: 0.25
+    interactSuccessString: petting-success-bear
+    interactFailureString: petting-failure-bear
+    interactSuccessSound:
+      path: /Audio/Animals/sloth_squeak.ogg
+
+- type: entity
+  name: Pudge ability hook
+  parent: [FishingRodBase,TierXContraband]
+  id: FishingRodPudge
+  suffix: Unremoveable
+  description: Brown hole
+  components:
+    - type: Item
+      size: Ginormous
+    - type: FishingRod #The component that handles all the joint stuff
+      cycleSound: /Audio/Effects/Fluids/glug.ogg
+      ropeSprite: _Impstation/Pudge/fishingrod_pudge.rsi/rope.png 
+      reelRate: 5
+    - type: Gun #The component that handles the firing
+      soundGunshot: /Audio/Effects/demon_attack1.ogg #scorpion-get_over_here.ogg
+    - type: RechargeBasicEntityAmmo
+      rechargeCooldown: 7.5
+      rechargeSound: /Audio/Effects/Fluids/blood1.ogg
+    - type: BasicEntityAmmoProvider #The component that handles whats being fired
+      proto: FishingHookPudge
+      capacity: 10
+      count: 10
+    - type: UseDelay #The component that prevents the server from being spammed too much
+      delay: 3.5
+    - type: Sprite #The component that contains the visual itself
+      sprite: _Impstation/Pudge/fishingrod_pudge.rsi
+      layers:
+        - state: base
+        - state: base-unshaded
+          map: [ "unshaded" ]
+          visible: true
+    - type: Unremoveable
+    - type: GenericVisualizer #The component that handles multiple states for the sprite
+      visuals:
+        enum.AmmoVisuals.HasAmmo: 
+          unshaded:
+            True: { state: base-unshaded }
+            False: { state: base-unshaded-off }
+
+- type: entity      
+  id: FishingHookPudge
+  name: hook
+  parent: FishingHookBase
+  categories: [ HideSpawnMenu ]
+  components:
+    - type: FishingProjectile #The component that's used for joint stuff
+      jointLength: 1.5
+    - type: EmbeddableProjectile #The component that tells the item to embed onto things
+      autoRemoveDuration: 20
+      removalTime: 20
+      deleteOnRemove: false
+      sound: 
+        path: /Audio/Effects/Fluids/splat.ogg
+    - type: Projectile #The component that handles the fact that this was fired from something
+      deleteOnCollide: false
+      damage:
+        types:
+          Piercing: 75
+    - type: Sprite #The component that handles basic visuals
+      noRot: false
+      sprite: _Impstation/Pudge/fishingrod_pudge.rsi
+      layers:
+        - state: hook
+  

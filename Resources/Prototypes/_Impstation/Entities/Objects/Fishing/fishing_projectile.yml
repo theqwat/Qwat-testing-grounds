@@ -79,28 +79,3 @@
       sprite: _Impstation/Objects/Fishing/fishingrod_Ling.rsi
       layers:
         - state: hook
-
-- type: entity      
-  id: FishingHookPudge
-  name: hook
-  parent: FishingHookBase
-  categories: [ HideSpawnMenu ]
-  components:
-    - type: FishingProjectile #The component that's used for joint stuff
-      jointLength: 1.5
-    - type: EmbeddableProjectile #The component that tells the item to embed onto things
-      autoRemoveDuration: 20
-      removalTime: 20
-      deleteOnRemove: false
-      sound: 
-        path: /Audio/Effects/Fluids/splat.ogg
-    - type: Projectile #The component that handles the fact that this was fired from something
-      deleteOnCollide: false
-      damage:
-        types:
-          Piercing: 75
-    - type: Sprite #The component that handles basic visuals
-      noRot: false
-      sprite: _Impstation/Objects/Fishing/fishingrod_Pudge.rsi
-      layers:
-        - state: hook
