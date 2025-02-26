@@ -97,8 +97,6 @@
   suffix: Unremoveable
   description: Brown hole
   components:
-    #- type: fixture im leaving this here since if possible replace this with a way to make the changeling NOT MOVE WHEN REELING!!!
-    #  friction: 20
     - type: Item
       size: Ginormous
     - type: FishingRod #The component that handles all the joint stuff
