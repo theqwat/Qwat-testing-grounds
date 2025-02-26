@@ -1,15 +1,22 @@
 {
   "version": 1,
-  "size": {
-    "x": 1255,
-    "y": 880
+  "size": 
+  {
+    "x": 64,
+    "y": 48
   },
-  "license": "we are getting",
-  "copyright": "Taken from dota 2",
-  "states": [
+  "license": "CC-BY-SA-3.0",
+  "copyright": "taken from Dota 2, edited by mqole and qwat forimpstation",
+  "states": 
+  [
     {
       "name": "pudge",
       "directions": 4
+    },
+
+    {
+      "name": "pudge_dead",
+      "directions": 1
     }
   ]
 }

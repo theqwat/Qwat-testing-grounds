@@ -1,7 +1,7 @@
 - type: entity
   name: Pudge
   id: MobDotaPudge
-  parent: MobSpaceBasic
+  parent: [ MobCombat, SimpleMobBase ]
   description: watch out for his brown hole
   components:
   - type: Sprite
@@ -10,27 +10,10 @@
     layers:
     - map: [ "enum.DamageStateVisualLayers.Base" ]
       state: pudge
-    - map: [ "enum.DamageStateVisualLayers.BaseUnshaded" ]
-      state: glow
-      shader: unshaded
   - type: Butcherable
     spawned:
-    - id: FoodMeatBear
-      amount: 3
-    - id: MaterialHideBear
+    - id: FishingRodPudge
       amount: 1
-      prob: 0.3
-  - type: ReplacementAccent
-    accent: genericAggressive
-  - type: Vocal
-    sounds:
-      Unsexed: Bear
-  - type: InteractionPopup
-    successChance: 0.25
-    interactSuccessString: petting-success-bear
-    interactFailureString: petting-failure-bear
-    interactSuccessSound:
-      path: /Audio/Animals/sloth_squeak.ogg
 
 - type: entity
   name: Pudge ability hook
@@ -52,8 +35,8 @@
       rechargeSound: /Audio/Effects/Fluids/blood1.ogg
     - type: BasicEntityAmmoProvider #The component that handles whats being fired
       proto: FishingHookPudge
-      capacity: 10
-      count: 10
+      capacity: 1
+      count: 1
     - type: UseDelay #The component that prevents the server from being spammed too much
       delay: 3.5
     - type: Sprite #The component that contains the visual itself
@@ -95,4 +78,3 @@
       sprite: _Impstation/Pudge/fishingrod_pudge.rsi
       layers:
         - state: hook
-  
