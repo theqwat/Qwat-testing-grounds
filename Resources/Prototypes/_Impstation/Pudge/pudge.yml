@@ -1,0 +1,168 @@
+- type: entity
+  name: Pudge
+  id: MobDotaPudge
+  parent: SimpleSpaceMobBase
+  description: watch out for his brown hole
+  components:
+  - type: Sprite
+    drawdepth: Mobs
+    sprite: _Impstation/Pudge/pudge.rsi
+    layers:
+    - map: [ "enum.DamageStateVisualLayers.Base" ]
+      state: pudge
+  - type: Vocal #TODO: Pudge sounds
+    sounds:
+      Unsexed: Bear
+  - type: MobThresholds
+    thresholds:
+      0: Alive
+      670: Critical
+      680: Dead # he dies really fast.
+  - type: HTN
+    rootTask:
+      task: PudgeCompound
+  - type: NpcFactionMember
+    factions:
+    - AllHostile
+  - type: MeleeWeapon
+    hidden: true
+    soundHit:
+      collection: MetalThud
+    damage:
+      types:
+        Blunt: 12
+        Slash: 10
+        Piercing: 3
+  - type: ActionGrant #TODO: Pudge actions
+    actions:
+    - ActionPudgeMeatHook
+    - ActionPudgeRot
+    - ActionPudgeMeatShield
+    - ActionPudgeDismember
+
+- type: entity
+  name: Pudge ability hook
+  parent: [FishingRodBase,TierXContraband]
+  id: FishingRodPudge
+  suffix: Unremoveable
+  description: Brown hole
+  components:
+    - type: Item
+      size: Ginormous
+    - type: FishingRod #The component that handles all the joint stuff
+      cycleSound: /Audio/Effects/Fluids/glug.ogg
+      ropeSprite: _Impstation/Pudge/fishingrod_pudge.rsi/rope.png
+      reelRate: 5
+    - type: Gun #The component that handles the firing
+      soundGunshot: /Audio/Effects/demon_attack1.ogg #scorpion-get_over_here.ogg
+    - type: RechargeBasicEntityAmmo
+      rechargeCooldown: 7.5
+      rechargeSound: /Audio/Effects/Fluids/blood1.ogg
+    - type: BasicEntityAmmoProvider #The component that handles whats being fired
+      proto: FishingHookPudge
+      capacity: 10
+      count: 10
+    - type: UseDelay #The component that prevents the server from being spammed too much
+      delay: 3.5
+    - type: Sprite
+      sprite: _Impstation/Pudge/fishingrod_pudge.rsi
+      layers:
+        - state: base
+        - state: base-unshaded
+          map: [ "unshaded" ]
+          visible: true
+    - type: Unremoveable
+    - type: GenericVisualizer #The component that handles multiple states for the sprite
+      visuals:
+        enum.AmmoVisuals.HasAmmo:
+          unshaded:
+            True: { state: base-unshaded }
+            False: { state: base-unshaded-off }
+
+- type: entity
+  id: FishingHookPudge
+  name: hook
+  parent: FishingHookBase
+  categories: [ HideSpawnMenu ]
+  components:
+    - type: FishingProjectile #The component that's used for joint stuff
+      jointLength: 1.5
+    - type: EmbeddableProjectile #The component that tells the item to embed onto things
+      autoRemoveDuration: 20
+      removalTime: 20
+      deleteOnRemove: false
+      sound:
+        path: /Audio/Effects/Fluids/splat.ogg
+    - type: Projectile #The component that handles the fact that this was fired from something
+      deleteOnCollide: false
+      damage:
+        types:
+          Piercing: 75
+    - type: Sprite
+      noRot: false
+      sprite: _Impstation/Pudge/fishingrod_pudge.rsi
+      layers:
+        - state: hook
+
+# TODO!!!! all the actions
+- type: entity
+  id: ActionPudgeMeatHook
+  name: MEAT HOOK
+  description: Launches a bloody hook toward a unit or location. The hook will snag the first unit it encounters, dragging the unit back to Pudge, killing it if it's a non-ancient creep and dealing damage if it is an enemy otherwise.
+  components:
+  - type: InstantAction
+    useDelay: 2
+    itemIconStyle: NoItem
+    icon:
+      sprite: _Impstation/Pudge/pudge_actions.rsi
+      state: meathook
+    event: !type:ToggleTentacleEvent {} #Placeholder
+
+- type: entity
+  id: ActionPudgeRot
+  name: ROT
+  description: A toxic cloud that deals intense damage and slows movement--harming not only enemy units but Pudge himself.
+  components:
+  - type: InstantAction
+    useDelay: 2
+    itemIconStyle: NoItem
+    icon:
+      sprite: _Goobstation/Changeling/changeling_abilities.rsi
+      state: tentacle
+    event: !type:ToggleTentacleEvent {} #Placeholder
+
+- type: entity
+  id: ActionPudgeMeatShield
+  name: MEAT SHIELD
+  description: Pudge covers himself with a layer of flesh that blocks damage of any type taken from any source.
+  components:
+  - type: InstantAction
+    useDelay: 2
+    itemIconStyle: NoItem
+    icon:
+      sprite: _Goobstation/Changeling/changeling_abilities.rsi
+      state: chitinous_armor
+    event: !type:ToggleChitinousArmorEvent {} #Placeholder
+
+- type: entity
+  id: ActionPudgeDismember
+  name: DISMEMBER
+  description: CHANNELED - Pudge chows down on an enemy unit, disabling it and dealing damage over time. Damage is increased by Pudge's Strength and heals him for the total amount. Pudge pulls the unit at a rate of 75 units, up to a minimum of 125 range.
+  components:
+  - type: InstantAction
+    useDelay: 2
+    itemIconStyle: NoItem
+    icon:
+      sprite: _Goobstation/Changeling/changeling_abilities.rsi
+      state: armblade
+    event: !type:ToggleArmbladeEvent {} #Placeholder
+
+- type: htnCompound
+  id: PudgeCompound #TODO: borrow code from goliath.yml to make the ai more evil
+  branches:
+    - tasks:
+        - !type:HTNCompoundTask
+          task: MeleeCombatCompound
+    - tasks:
+        - !type:HTNCompoundTask
+          task: IdleCompound
