@@ -4,6 +4,8 @@
   name: fishing hook
   categories: [ HideSpawnMenu ]
   components:
+    - type: Ammo
+      muzzleFlash: null
     - type: FishingProjectile #The component that's used for joint stuff
     - type: EmbeddableProjectile #The component that tells the item to embed onto things
       autoRemoveDuration: 20
@@ -61,6 +63,8 @@
   parent: FishingHookBase
   categories: [ HideSpawnMenu ]
   components:
+    - type: Ammo
+      muzzleFlash: MuzzleFlashEffect_Ling
     - type: FishingProjectile #The component that's used for joint stuff
       jointLength: 1.5
     - type: EmbeddableProjectile #The component that tells the item to embed onto things
@@ -79,3 +83,15 @@
       sprite: _Impstation/Objects/Fishing/fishingrod_Ling.rsi
       layers:
         - state: hook
+
+- type: entity
+  id: MuzzleFlashEffect_Ling
+  parent: MuzzleFlashEffect
+  categories: [ HideSpawnMenu ]
+  components:
+  - type: Sprite
+    layers:
+    - shader: unshaded
+      map: ["enum.EffectLayers.Unshaded"]
+      sprite:  _Impstation/Objects/Fishing/fishingrod_Ling.rsi
+      state: muzzle_flesh
