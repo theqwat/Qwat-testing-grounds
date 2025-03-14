@@ -34,7 +34,6 @@ public sealed class CosmicGlyphSystem : EntitySystem
     [Dependency] private readonly SharedMindSystem _mind = default!;
     [Dependency] private readonly AudioSystem _audio = default!;
     [Dependency] private readonly SharedContainerSystem _container = default!;
-    [Dependency] private readonly SharedEyeSystem _eye = default!;
 
     public override void Initialize()
     {
@@ -150,6 +149,7 @@ public sealed class CosmicGlyphSystem : EntitySystem
             else
             {
                 _stun.TryStun(target, TimeSpan.FromSeconds(4f), false);
+                _damageable.TryChangeDamage(target, uid.Comp.ConversionHeal * -1);
                 _cultRule.CosmicConversion(target);
             }
         }

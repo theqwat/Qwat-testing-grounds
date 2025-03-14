@@ -1,5 +1,6 @@
 using Content.Shared._Impstation.CosmicCult.Prototypes;
 using Content.Shared.Damage;
+using Robust.Shared.Audio;
 using Robust.Shared.GameStates;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Serialization;
@@ -9,6 +10,12 @@ namespace Content.Shared._Impstation.CosmicCult.Components;
 [AutoGenerateComponentPause]
 public sealed partial class MonumentComponent : Component
 {
+    /// <summary>
+    /// The sound effect played when entropy is infused into The Monument.
+    /// </summary>
+    [DataField, AutoNetworkedField]
+    public SoundSpecifier InfusionSFX = new SoundPathSpecifier("/Audio/_Impstation/CosmicCult/insert_entropy.ogg");
+
     /// <summary>
     /// used to hide the monument from non-cultists
     /// </summary>
@@ -72,7 +79,7 @@ public sealed partial class MonumentComponent : Component
     /// the timer used for ticking healing from vacuous vitality
     /// </summary>
     [AutoPausedField, DataField]
-    public TimeSpan VitalityCheckTimer = default!;
+    public TimeSpan CheckTimer = default!;
 
     /// <summary>
     /// the amount of time between the above timer's ticks
@@ -101,22 +108,10 @@ public sealed partial class MonumentComponent : Component
     };
 
     /// <summary>
-    /// the timer used for staging up the monument
-    /// </summary>
-    [AutoPausedField, DataField]
-    public TimeSpan TierChangeTimer = default!;
-
-    /// <summary>
-    /// the amount of time to wait for a stage change
-    /// </summary>
-    [DataField]
-    public TimeSpan TierWait = TimeSpan.FromSeconds(60);
-
-    /// <summary>
     /// wether or not there's a stage change queued
     /// </summary>
     [DataField]
-    public bool TierChanging = false;
+    public bool CanTierUp = true;
 }
 
 [Serializable, NetSerializable]
