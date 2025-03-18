@@ -39,6 +39,7 @@
     - ActionPudgeRot
     - ActionPudgeMeatShield
     - ActionPudgeDismember
+  - type: Hands
 
 - type: entity
   name: Pudge ability hook
@@ -80,7 +81,7 @@
             False: { state: base-unshaded-off }
 
 - type: entity
-  id: FishingHookPudge
+  id: MeatHookPudge
   name: hook
   parent: FishingHookBase
   categories: [ HideSpawnMenu ]
@@ -142,7 +143,7 @@
     icon:
       sprite: _Goobstation/Changeling/changeling_abilities.rsi
       state: chitinous_armor
-    event: !type:PudgeToggleMeatShieldEvent {}
+    event: !type:PudgeMeatShieldEvent {}
 
 - type: entity
   id: ActionPudgeDismember
@@ -171,3 +172,37 @@
     - tasks:
         - !type:HTNCompoundTask
           task: IdleCompound
+
+- type: entity
+  categories: [ HideSpawnMenu ]
+  id: PudgeMeatShieldVFX
+  components:
+  - type: TimedDespawn
+    lifetime: 1.92
+  - type: Sprite
+    layers:
+    - sprite: _Impstation/CosmicCult/Effects/ability_impositionvfx.rsi
+      state: vfx
+      shader: unshaded
+    netsync: false
+    drawdepth: Mobs
+  - type: PointLight
+    color: "#42a4ae"
+    radius: 10
+    energy: 6
+    castShadows: true
+  - type: LightBehaviour
+    behaviours:
+     - !type:FadeBehaviour
+       interpolate: Linear
+       minDuration: 1.92
+       maxDuration: 1.92
+       startValue: 0.1
+       endValue: 6
+       property: Energy
+       enabled: true
+       isLooped: true
+       reverseWhenFinished: true
+  - type: Tag
+    tags:
+      - HideContextMenu

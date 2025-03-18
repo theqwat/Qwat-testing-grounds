@@ -15,6 +15,9 @@ using Content.Shared.Damage;
 using Content.Shared.Damage.Prototypes;
 using Content.Shared.Chemistry.Components;
 using Content.Server.Body.Systems;
+using Content.Shared.Hands.Components;
+using Timer = Robust.Shared.Timing.Timer;
+using Content.Shared.Hands.EntitySystems;
 
 namespace Content.Server._Impstation.Pudge;
 
@@ -28,65 +31,98 @@ public sealed partial class PudgeSystem : EntitySystem
     [Dependency] private readonly DamageableSystem _damageable = default!;
     [Dependency] private readonly IPrototypeManager _proto = default!;
     [Dependency] private readonly BloodstreamSystem _bloodstreamSystem = default!;
+    [Dependency] private readonly SharedHandsSystem _hands = default!;
     private readonly SoundSpecifier _meatHookSFX = new SoundPathSpecifier("/Audio/Effects/Fluids/splat.ogg");
     private readonly SoundSpecifier _rotSFX = new SoundPathSpecifier("/Audio/Effects/Fluids/splat.ogg");
     private readonly SoundSpecifier _meatShieldSFX = new SoundPathSpecifier("/Audio/Effects/Fluids/splat.ogg");
+    private readonly SoundSpecifier _deflectSFX = new SoundPathSpecifier("/Audio/Effects/Fluids/splat.ogg");
     private readonly SoundSpecifier _dismemberSFX = new SoundPathSpecifier("/Audio/Effects/Fluids/splat.ogg");
     private readonly SoundSpecifier _chowSFX = new SoundPathSpecifier("/Audio/Effects/Fluids/splat.ogg");
+    private readonly EntProtoId _meatShieldVFX = "PudgeMeatShieldVFX";
     public ProtoId<DamageGroupPrototype> ChowDamageGroup = "Brute";
     public override void Initialize()
     {
         base.Initialize();
-        SubscribeLocalEvent<PudgeToggleMeatHookEvent>(OnMeatHook);
-        SubscribeLocalEvent<PudgeRotEvent>(OnRot);
-        SubscribeLocalEvent<PudgeToggleMeatShieldEvent>(OnMeatShield);
-        SubscribeLocalEvent<PudgeDismemberEvent>(OnDismember);
-        SubscribeLocalEvent<PudgeDismemberDoAfterEvent>(OnDismemberDoAfter);
+        //NO PUDGE COMPONENT!!!!!
+        SubscribeLocalEvent<HandsComponent, PudgeToggleMeatHookEvent>(OnMeatHook);
+        SubscribeLocalEvent<HandsComponent, PudgeRotEvent>(OnRot);
+        SubscribeLocalEvent<HandsComponent, PudgeMeatShieldEvent>(OnMeatShield);
+        SubscribeLocalEvent<MeatShieldComponent, BeforeDamageChangedEvent>(OnMeatShieldDamaged);
+        SubscribeLocalEvent<HandsComponent, PudgeDismemberEvent>(OnDismember);
+        SubscribeLocalEvent<HandsComponent, PudgeDismemberDoAfterEvent>(OnDismemberDoAfter);
     }
 
-    private void OnMeatHook(ref PudgeToggleMeatHookEvent args)
+    private void OnMeatHook(EntityUid uid, HandsComponent component, ref PudgeToggleMeatHookEvent args)
     {
-        if (!TryToggleItem(args.Performer, "MeatHookPudge"))
+        if (!TryToggleItem(args.Performer, "MeatHookPudge", component))
             return;
         _audio.PlayPvs(_meatHookSFX, args.Performer, AudioParams.Default.WithVolume(-3f));
     }
 
-    private void OnRot(ref PudgeRotEvent args)
+    public bool TryToggleItem(EntityUid uid, EntProtoId proto, HandsComponent component)
+    {
+        if (HasComp<MeatHookComponent>(uid))
+            return false;
+        var item = Spawn(proto, Transform(uid).Coordinates);
+        if (!_hands.TryForcePickupAnyHand(uid, item))
+        {
+            _popup.PopupEntity(Loc.GetString("pudge-no-hands"), uid, uid);
+            QueueDel(item);
+            return false;
+        }
+        EnsureComp<MeatHookComponent>(uid);
+        return true;
+    }
+
+    private void OnRot(EntityUid uid, HandsComponent component, ref PudgeRotEvent args)
     {
         _popup.PopupEntity(Loc.GetString("pudge-rot-popup"), args.Performer, args.Performer);
         _audio.PlayPvs(_rotSFX, args.Performer, AudioParams.Default.WithVolume(-3f));
 
         var tileMix = _atmos.GetTileMixture(args.Performer, excite: true);
-        tileMix?.AdjustMoles(Gas.Ammonia, 30);
+        tileMix?.AdjustMoles(Gas.Ammonia, 300);
+        //MAYBE ADD A FOAM CLOUD OR PUDDLE SPILL OR SOMETHING
     }
 
-    private void OnMeatShield(ref PudgeToggleMeatShieldEvent args)
+    private void OnMeatShield(EntityUid uid, HandsComponent component, ref PudgeMeatShieldEvent args)
     {
-        if (!TryToggleItem(args.Performer, "MeatShieldPudge"))
+        if (HasComp<MeatShieldComponent>(uid))
+        {
+            _popup.PopupEntity(Loc.GetString("pudge-ability-active"), uid, uid);
             return;
-        _audio.PlayPvs(_meatShieldSFX, args.Performer, AudioParams.Default.WithVolume(-3f));
+        }
+        _audio.PlayPvs(_meatShieldSFX, uid, AudioParams.Default.WithVolume(-3f));
+        EnsureComp<MeatShieldComponent>(uid, out var shield);
+        Timer.Spawn(TimeSpan.FromSeconds(5.8), () => RemComp(uid, shield));
+        Spawn(_meatShieldVFX, Transform(uid).Coordinates);
+        args.Handled = true;
     }
 
-    private void OnDismember(ref PudgeDismemberEvent args)
+    private void OnMeatShieldDamaged(Entity<MeatShieldComponent> uid, ref BeforeDamageChangedEvent args)
     {
-        var performer = args.Performer;
+        args.Cancelled = true;
+        _audio.PlayPvs(_deflectSFX, uid, AudioParams.Default.WithVolume(-3f));
+    }
+
+    private void OnDismember(EntityUid uid, HandsComponent component, ref PudgeDismemberEvent args)
+    {
         var target = args.Target;
 
         var popupSelf = Loc.GetString("pudge-dismember-start-self", ("target", Identity.Entity(target, EntityManager)));
         var popupTarget = Loc.GetString("pudge-dismember-start-target");
         var popupOthers = Loc.GetString("pudge-dismember-start-others", ("user", Identity.Entity(target, EntityManager)), ("target", Identity.Entity(target, EntityManager)));
 
-        _popup.PopupEntity(popupSelf, performer, performer);
+        _popup.PopupEntity(popupSelf, uid, uid);
         _popup.PopupEntity(popupTarget, target, target, PopupType.MediumCaution);
-        _popup.PopupEntity(popupOthers, performer, Filter.Pvs(performer).RemovePlayersByAttachedEntity([performer, target]), true, PopupType.MediumCaution);
+        _popup.PopupEntity(popupOthers, uid, Filter.Pvs(uid).RemovePlayersByAttachedEntity([uid, target]), true, PopupType.MediumCaution);
 
-        _audio.PlayPvs(_dismemberSFX, performer, AudioParams.Default.WithVolume(-3f));
+        _audio.PlayPvs(_dismemberSFX, uid, AudioParams.Default.WithVolume(-3f));
 
-        TryDismember(performer, target);
+        TryDismember(uid, target);
     }
-    private void TryDismember(EntityUid performer, EntityUid? target)
+    private void TryDismember(EntityUid uid, EntityUid? target)
     {
-        var dargs = new DoAfterArgs(EntityManager, performer, TimeSpan.FromSeconds(0.75), new PudgeDismemberDoAfterEvent(), performer, target)
+        var dargs = new DoAfterArgs(EntityManager, uid, TimeSpan.FromSeconds(0.75), new PudgeDismemberDoAfterEvent(), uid, target)
         {
             DistanceThreshold = 1f,
             BreakOnDamage = false,
@@ -97,25 +133,20 @@ public sealed partial class PudgeSystem : EntitySystem
         };
         _doAfter.TryStartDoAfter(dargs);
     }
-    private void OnDismemberDoAfter(ref PudgeDismemberDoAfterEvent args)
+    private void OnDismemberDoAfter(EntityUid uid, HandsComponent component, ref PudgeDismemberDoAfterEvent args)
     {
         var target = args.Args.Target;
         if (args.Cancelled || args.Handled || target == null || _mobState.IsDead(target.Value))
             return;
 
-        _audio.PlayPvs(_chowSFX, args.User, AudioParams.Default.WithVolume(-3f));
+        _audio.PlayPvs(_chowSFX, uid, AudioParams.Default.WithVolume(-3f));
 
         var dmg = new DamageSpecifier(_proto.Index(ChowDamageGroup), 11);
         _damageable.TryChangeDamage(target, dmg, false, true);
 
         var ichorInjection = new Solution("Ichor", 10f);
-        _bloodstreamSystem.TryAddToChemicals(args.User, ichorInjection);
+        _bloodstreamSystem.TryAddToChemicals(uid, ichorInjection);
 
-        TryDismember(args.User, target);
-    }
-
-    public bool TryToggleItem(EntityUid uid, EntProtoId proto)
-    {
-        return false;
+        TryDismember(uid, target);
     }
 }

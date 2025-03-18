@@ -1,11 +1,14 @@
 using Content.Shared.Actions;
-using Content.Shared.DoAfter;
-using Robust.Shared.Serialization;
 
 namespace Content.Shared._Impstation.Pudge;
 
-[ByRefEvent] public sealed partial class PudgeToggleMeatHookEvent : InstantActionEvent { }
-[ByRefEvent] public sealed partial class PudgeRotEvent : InstantActionEvent { }
-[ByRefEvent] public sealed partial class PudgeToggleMeatShieldEvent : InstantActionEvent { }
-[ByRefEvent] public sealed partial class PudgeDismemberEvent : EntityTargetActionEvent { }
-//using ByRefEvent this many times is scary.
+public sealed partial class PudgeToggleMeatHookEvent : InstantActionEvent { }
+public sealed partial class PudgeRotEvent : InstantActionEvent { }
+public sealed partial class PudgeMeatShieldEvent : InstantActionEvent { }
+public sealed partial class PudgeMeatShieldBreakEvent : InstantActionEvent { }
+public sealed partial class PudgeDismemberEvent : EntityTargetActionEvent { }
+
+[RegisterComponent]
+public sealed partial class MeatShieldComponent : Component { }
+[RegisterComponent]
+public sealed partial class MeatHookComponent : Component { }
