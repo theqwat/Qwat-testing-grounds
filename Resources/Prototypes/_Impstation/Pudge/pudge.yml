@@ -111,12 +111,12 @@
   description: Launches a bloody hook toward a unit or location. The hook will snag the first unit it encounters, dragging the unit back to Pudge, killing it if it's a non-ancient creep and dealing damage if it is an enemy otherwise.
   components:
   - type: InstantAction
-    useDelay: 2
+    useDelay: 5
     itemIconStyle: NoItem
     icon:
       sprite: _Impstation/Pudge/pudge_actions.rsi
       state: meathook
-    event: !type:ToggleTentacleEvent {} #Placeholder
+    event: !type:PudgeToggleMeatHookEvent {}
 
 - type: entity
   id: ActionPudgeRot
@@ -124,12 +124,12 @@
   description: A toxic cloud that deals intense damage and slows movement--harming not only enemy units but Pudge himself.
   components:
   - type: InstantAction
-    useDelay: 2
+    useDelay: 10
     itemIconStyle: NoItem
     icon:
       sprite: _Goobstation/Changeling/changeling_abilities.rsi
       state: tentacle
-    event: !type:ToggleTentacleEvent {} #Placeholder
+    event: !type:PudgeRotEvent {}
 
 - type: entity
   id: ActionPudgeMeatShield
@@ -137,25 +137,30 @@
   description: Pudge covers himself with a layer of flesh that blocks damage of any type taken from any source.
   components:
   - type: InstantAction
-    useDelay: 2
+    useDelay: 5
     itemIconStyle: NoItem
     icon:
       sprite: _Goobstation/Changeling/changeling_abilities.rsi
       state: chitinous_armor
-    event: !type:ToggleChitinousArmorEvent {} #Placeholder
+    event: !type:PudgeToggleMeatShieldEvent {}
 
 - type: entity
   id: ActionPudgeDismember
   name: DISMEMBER
   description: CHANNELED - Pudge chows down on an enemy unit, disabling it and dealing damage over time. Damage is increased by Pudge's Strength and heals him for the total amount. Pudge pulls the unit at a rate of 75 units, up to a minimum of 125 range.
   components:
-  - type: InstantAction
-    useDelay: 2
+  - type: EntityTargetAction
+    useDelay: 5
+    whitelist:
+      components:
+      - Body
+    canTargetSelf: false
+    interactOnMiss: false
     itemIconStyle: NoItem
     icon:
       sprite: _Goobstation/Changeling/changeling_abilities.rsi
       state: armblade
-    event: !type:ToggleArmbladeEvent {} #Placeholder
+    event: !type:PudgeDismemberEvent {}
 
 - type: htnCompound
   id: PudgeCompound #TODO: borrow code from goliath.yml to make the ai more evil
