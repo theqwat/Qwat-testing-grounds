@@ -15,9 +15,17 @@ using Content.Shared.Damage;
 using Content.Shared.Damage.Prototypes;
 using Content.Shared.Chemistry.Components;
 using Content.Server.Body.Systems;
-using Content.Shared.Hands.Components;
 using Timer = Robust.Shared.Timing.Timer;
-using Content.Shared.Hands.EntitySystems;
+using Content.Shared.Actions;
+using Robust.Shared.Physics.Systems;
+using System.Numerics;
+using Content.Shared.Physics;
+using Content.Shared.Weapons.Misc;
+using Content.Shared.Projectiles;
+using Robust.Shared.Physics;
+using Robust.Shared.Timing;
+using Robust.Shared.Network;
+using Robust.Shared.Physics.Dynamics.Joints;
 
 namespace Content.Server._Impstation.Pudge;
 
@@ -31,7 +39,12 @@ public sealed partial class PudgeSystem : EntitySystem
     [Dependency] private readonly DamageableSystem _damageable = default!;
     [Dependency] private readonly IPrototypeManager _proto = default!;
     [Dependency] private readonly BloodstreamSystem _bloodstreamSystem = default!;
-    [Dependency] private readonly SharedHandsSystem _hands = default!;
+    [Dependency] private readonly SharedTransformSystem _transform = default!;
+    [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
+    [Dependency] protected readonly IGameTiming Timing = default!;
+    [Dependency] private readonly SharedJointSystem _joints = default!;
+    [Dependency] private readonly INetManager _netManager = default!;
+    [Dependency] private readonly SharedPhysicsSystem _physics = default!;
     private readonly SoundSpecifier _meatHookSFX = new SoundPathSpecifier("/Audio/Effects/Fluids/splat.ogg");
     private readonly SoundSpecifier _rotSFX = new SoundPathSpecifier("/Audio/Effects/Fluids/splat.ogg");
     private readonly SoundSpecifier _meatShieldSFX = new SoundPathSpecifier("/Audio/Effects/Fluids/splat.ogg");
@@ -40,51 +53,151 @@ public sealed partial class PudgeSystem : EntitySystem
     private readonly SoundSpecifier _chowSFX = new SoundPathSpecifier("/Audio/Effects/Fluids/splat.ogg");
     private readonly EntProtoId _meatShieldVFX = "PudgeMeatShieldVFX";
     public ProtoId<DamageGroupPrototype> ChowDamageGroup = "Brute";
+    public const string GrapplingJoint = "grappling";
     public override void Initialize()
     {
         base.Initialize();
         //NO PUDGE COMPONENT!!!!!
-        SubscribeLocalEvent<HandsComponent, PudgeToggleMeatHookEvent>(OnMeatHook);
-        SubscribeLocalEvent<HandsComponent, PudgeRotEvent>(OnRot);
-        SubscribeLocalEvent<HandsComponent, PudgeMeatShieldEvent>(OnMeatShield);
+        SubscribeLocalEvent<ActionsComponent, PudgeMeatHookEvent>(OnMeatHook);
+        SubscribeLocalEvent<MeatHookComponent, ProjectileEmbedEvent>(OnMeatHookCollide);
+        SubscribeLocalEvent<MeatHookComponent, JointRemovedEvent>(OnGrappleJointRemoved);
+        SubscribeLocalEvent<MeatHookComponent, RemoveEmbedEvent>(OnRemoveEmbed);
+
+        SubscribeLocalEvent<ActionsComponent, PudgeRotEvent>(OnRot);
+
+        SubscribeLocalEvent<ActionsComponent, PudgeMeatShieldEvent>(OnMeatShield);
         SubscribeLocalEvent<MeatShieldComponent, BeforeDamageChangedEvent>(OnMeatShieldDamaged);
-        SubscribeLocalEvent<HandsComponent, PudgeDismemberEvent>(OnDismember);
-        SubscribeLocalEvent<HandsComponent, PudgeDismemberDoAfterEvent>(OnDismemberDoAfter);
+
+        SubscribeLocalEvent<ActionsComponent, PudgeDismemberEvent>(OnDismember);
+        SubscribeLocalEvent<ActionsComponent, PudgeDismemberDoAfterEvent>(OnDismemberDoAfter);
     }
 
-    private void OnMeatHook(EntityUid uid, HandsComponent component, ref PudgeToggleMeatHookEvent args)
+    #region meat's hook
+    private void OnMeatHook(EntityUid uid, ActionsComponent actions, ref PudgeMeatHookEvent args)
     {
-        if (!TryToggleItem(args.Performer, "MeatHookPudge", component))
-            return;
-        _audio.PlayPvs(_meatHookSFX, args.Performer, AudioParams.Default.WithVolume(-3f));
+        var ent = Spawn("MeatHookPudge", _transform.GetMapCoordinates(args.Performer));
+        _audio.PlayPvs(_meatHookSFX, uid, AudioParams.Default.WithVolume(-3f));
+
+        EnsureComp<MeatHookComponent>(ent, out var component);
+        component.Projectile = ent;
+        Dirty(ent, component);
+        var visuals = EnsureComp<JointVisualsComponent>(ent);
+        visuals.Sprite = component.RopeSprite;
+        visuals.OffsetA = new Vector2(0f, 0.5f);
+        visuals.Target = GetNetEntity(uid);
+        Dirty(ent, visuals);
+
+        TryComp<AppearanceComponent>(uid, out var appearance);
+        _appearance.SetData(uid, SharedTetherGunSystem.TetherVisualsStatus.Key, false, appearance);
+        Dirty(ent, component);
     }
 
-    public bool TryToggleItem(EntityUid uid, EntProtoId proto, HandsComponent component)
+    public override void Update(float frameTime)
     {
-        if (HasComp<MeatHookComponent>(uid))
-            return false;
-        var item = Spawn(proto, Transform(uid).Coordinates);
-        if (!_hands.TryForcePickupAnyHand(uid, item))
+        base.Update(frameTime);
+
+        var query = EntityQueryEnumerator<MeatHookComponent>();
+
+        while (query.MoveNext(out var uid, out var grappling))
         {
-            _popup.PopupEntity(Loc.GetString("pudge-no-hands"), uid, uid);
-            QueueDel(item);
-            return false;
+            if (!grappling.Reeling)
+            {
+                if (Timing.IsFirstTimePredicted)
+                {
+                    //Just in case.
+                    grappling.Stream = _audio.Stop(grappling.Stream);
+                }
+                continue;
+            }
+            if (!TryComp<JointComponent>(uid, out var jointComp) ||
+                !jointComp.GetJoints.TryGetValue(GrapplingJoint, out var joint) ||
+                joint is not DistanceJoint distance)
+            {
+                SetReeling(uid, grappling, false, null);
+                continue;
+            }
+
+            // TODO: This should be on engine.
+            distance.MaxLength = MathF.Max(distance.MinLength, distance.MaxLength - grappling.ReelRate * frameTime);
+            distance.Length = MathF.Min(distance.MaxLength, distance.Length);
+
+            _physics.WakeBody(joint.BodyAUid);
+            _physics.WakeBody(joint.BodyBUid);
+
+            if (jointComp.Relay != null)
+            {
+                _physics.WakeBody(jointComp.Relay.Value);
+            }
+
+            Dirty(uid, jointComp);
+
+            if (distance.MaxLength.Equals(distance.MinLength))
+            {
+                SetReeling(uid, grappling, false, null);
+            }
         }
-        EnsureComp<MeatHookComponent>(uid);
-        return true;
     }
 
-    private void OnRot(EntityUid uid, HandsComponent component, ref PudgeRotEvent args)
+    private void SetReeling(EntityUid uid, MeatHookComponent component, bool value, EntityUid? user)
+    {
+        if (component.Reeling == value)
+            return;
+        if (value)
+        {
+            if (Timing.IsFirstTimePredicted)
+                component.Stream = _audio.PlayPredicted(component.ReelSound, uid, user)?.Entity;
+        }
+        else
+        {
+            if (Timing.IsFirstTimePredicted)
+            {
+                component.Stream = _audio.Stop(component.Stream);
+            }
+        }
+
+        component.Reeling = value;
+        Dirty(uid, component);
+    }
+
+    private void OnGrappleJointRemoved(EntityUid uid, MeatHookComponent component, JointRemovedEvent args)
+    {
+        if (_netManager.IsServer)
+            QueueDel(uid);
+    }
+
+    private void OnMeatHookCollide(EntityUid uid, MeatHookComponent component, ref ProjectileEmbedEvent args)
+    {
+        if (!Timing.IsFirstTimePredicted)
+            return;
+        //joint between the embedded and the weapon
+        var jointComp = EnsureComp<JointComponent>(args.Weapon);
+        var joint = _joints.CreateDistanceJoint(args.Weapon, args.Embedded, anchorA: new Vector2(0f, 0.5f), id: GrapplingJoint);
+        joint.MaxLength = joint.Length + 0.2f;
+        joint.Stiffness = 1f;
+        joint.MinLength = 2.5f;
+        // Setting velocity directly for mob movement fucks this so need to make them aware of it.
+        // joint.Breakpoint = 4000f;
+        Dirty(args.Weapon, jointComp);
+    }
+
+    private void OnRemoveEmbed(EntityUid uid, MeatHookComponent component, RemoveEmbedEvent args)
+    {
+        return;
+    }
+    # endregion
+
+    #region other stuff
+    private void OnRot(EntityUid uid, ActionsComponent component, ref PudgeRotEvent args)
     {
         _popup.PopupEntity(Loc.GetString("pudge-rot-popup"), args.Performer, args.Performer);
-        _audio.PlayPvs(_rotSFX, args.Performer, AudioParams.Default.WithVolume(-3f));
+        _audio.PlayPvs(_rotSFX, uid, AudioParams.Default.WithVolume(-3f));
 
         var tileMix = _atmos.GetTileMixture(args.Performer, excite: true);
         tileMix?.AdjustMoles(Gas.Ammonia, 300);
         //MAYBE ADD A FOAM CLOUD OR PUDDLE SPILL OR SOMETHING
     }
 
-    private void OnMeatShield(EntityUid uid, HandsComponent component, ref PudgeMeatShieldEvent args)
+    private void OnMeatShield(EntityUid uid, ActionsComponent component, ref PudgeMeatShieldEvent args)
     {
         if (HasComp<MeatShieldComponent>(uid))
         {
@@ -103,8 +216,10 @@ public sealed partial class PudgeSystem : EntitySystem
         args.Cancelled = true;
         _audio.PlayPvs(_deflectSFX, uid, AudioParams.Default.WithVolume(-3f));
     }
+    #endregion
 
-    private void OnDismember(EntityUid uid, HandsComponent component, ref PudgeDismemberEvent args)
+    #region dismember
+    private void OnDismember(EntityUid uid, ActionsComponent component, ref PudgeDismemberEvent args)
     {
         var target = args.Target;
 
@@ -133,7 +248,7 @@ public sealed partial class PudgeSystem : EntitySystem
         };
         _doAfter.TryStartDoAfter(dargs);
     }
-    private void OnDismemberDoAfter(EntityUid uid, HandsComponent component, ref PudgeDismemberDoAfterEvent args)
+    private void OnDismemberDoAfter(EntityUid uid, ActionsComponent component, ref PudgeDismemberDoAfterEvent args)
     {
         var target = args.Args.Target;
         if (args.Cancelled || args.Handled || target == null || _mobState.IsDead(target.Value))
@@ -150,3 +265,4 @@ public sealed partial class PudgeSystem : EntitySystem
         TryDismember(uid, target);
     }
 }
+#endregion

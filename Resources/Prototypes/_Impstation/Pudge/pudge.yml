@@ -39,7 +39,7 @@
     - ActionPudgeRot
     - ActionPudgeMeatShield
     - ActionPudgeDismember
-  - type: Hands
+  - type: Body
 
 - type: entity
   name: Pudge ability hook
@@ -111,13 +111,15 @@
   name: MEAT HOOK
   description: Launches a bloody hook toward a unit or location. The hook will snag the first unit it encounters, dragging the unit back to Pudge, killing it if it's a non-ancient creep and dealing damage if it is an enemy otherwise.
   components:
-  - type: InstantAction
+  - type: WorldTargetAction
     useDelay: 5
+    raiseOnUser: true
+    range: 10
     itemIconStyle: NoItem
     icon:
       sprite: _Impstation/Pudge/pudge_actions.rsi
       state: meathook
-    event: !type:PudgeToggleMeatHookEvent {}
+    event: !type:PudgeMeatHookEvent {}
 
 - type: entity
   id: ActionPudgeRot
