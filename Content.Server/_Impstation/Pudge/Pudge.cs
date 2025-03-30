@@ -45,12 +45,13 @@ public sealed partial class PudgeSystem : EntitySystem
     [Dependency] private readonly SharedJointSystem _joints = default!;
     [Dependency] private readonly INetManager _netManager = default!;
     [Dependency] private readonly SharedPhysicsSystem _physics = default!;
-    private readonly SoundSpecifier _meatHookSFX = new SoundPathSpecifier("/Audio/Effects/Fluids/splat.ogg");
-    private readonly SoundSpecifier _rotSFX = new SoundPathSpecifier("/Audio/Effects/Fluids/splat.ogg");
-    private readonly SoundSpecifier _meatShieldSFX = new SoundPathSpecifier("/Audio/Effects/Fluids/splat.ogg");
+    private readonly SoundSpecifier _meatHookSFX = new SoundPathSpecifier("/Audio/_Impstation/Pudge/PudgeHook.ogg");
+    private readonly SoundSpecifier _meatHookVOSFX = new SoundPathSpecifier("/Audio/_Impstation/Pudge/PudgeHookVO.ogg");
+    private readonly SoundSpecifier _rotSFX = new SoundPathSpecifier("/Audio/_Impstation/Pudge/PudgeRotVO.ogg");
+    private readonly SoundSpecifier _meatShieldSFX = new SoundPathSpecifier("/Audio/_Impstation/Pudge/PudgeMeatShieldVO.ogg");
     private readonly SoundSpecifier _deflectSFX = new SoundPathSpecifier("/Audio/Effects/Fluids/splat.ogg");
-    private readonly SoundSpecifier _dismemberSFX = new SoundPathSpecifier("/Audio/Effects/Fluids/splat.ogg");
-    private readonly SoundSpecifier _chowSFX = new SoundPathSpecifier("/Audio/Effects/Fluids/splat.ogg");
+    private readonly SoundSpecifier _dismemberSFX = new SoundPathSpecifier("/Audio/_Impstation/Pudge/PudgeDevourVO.ogg");
+    private readonly SoundSpecifier _chowSFX = new SoundPathSpecifier("/Audio/_Impstation/Pudge/PudgeDismember.ogg");
     private readonly EntProtoId _meatShieldVFX = "PudgeMeatShieldVFX";
     public ProtoId<DamageGroupPrototype> ChowDamageGroup = "Brute";
     public const string GrapplingJoint = "grappling";
@@ -76,6 +77,7 @@ public sealed partial class PudgeSystem : EntitySystem
     private void OnMeatHook(EntityUid uid, ActionsComponent actions, ref PudgeMeatHookEvent args)
     {
         var ent = Spawn("MeatHookPudge", _transform.GetMapCoordinates(args.Performer));
+        _audio.PlayPvs(_meatHookVOSFX, uid, AudioParams.Default.WithVolume(-3f));
         _audio.PlayPvs(_meatHookSFX, uid, AudioParams.Default.WithVolume(-3f));
 
         EnsureComp<MeatHookComponent>(ent, out var component);

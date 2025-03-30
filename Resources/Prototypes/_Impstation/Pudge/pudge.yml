@@ -12,7 +12,7 @@
       state: pudge
   - type: Vocal #TODO: Pudge sounds
     sounds:
-      Unsexed: Bear
+      Unsexed: Pudge
   - type: MobThresholds
     thresholds:
       0: Alive
@@ -40,45 +40,24 @@
     - ActionPudgeMeatShield
     - ActionPudgeDismember
   - type: Body
+  - type: FootstepModifier
+    footstepSoundCollection:
+      collection: PudgeStep
+  - type: Tag
+    tags:
+    - DoorBumpOpener
+    - FootstepSound
+    - VimPilot
 
-- type: entity
-  name: Pudge ability hook
-  parent: [FishingRodBase,TierXContraband]
-  id: FishingRodPudge
-  suffix: Unremoveable
-  description: Brown hole
-  components:
-    - type: Item
-      size: Ginormous
-    - type: FishingRod #The component that handles all the joint stuff
-      cycleSound: /Audio/Effects/Fluids/glug.ogg
-      ropeSprite: _Impstation/Pudge/fishingrod_pudge.rsi/rope.png
-      reelRate: 5
-    - type: Gun #The component that handles the firing
-      soundGunshot: /Audio/Effects/demon_attack1.ogg #scorpion-get_over_here.ogg
-    - type: RechargeBasicEntityAmmo
-      rechargeCooldown: 7.5
-      rechargeSound: /Audio/Effects/Fluids/blood1.ogg
-    - type: BasicEntityAmmoProvider #The component that handles whats being fired
-      proto: FishingHookPudge
-      capacity: 10
-      count: 10
-    - type: UseDelay #The component that prevents the server from being spammed too much
-      delay: 3.5
-    - type: Sprite
-      sprite: _Impstation/Pudge/fishingrod_pudge.rsi
-      layers:
-        - state: base
-        - state: base-unshaded
-          map: [ "unshaded" ]
-          visible: true
-    - type: Unremoveable
-    - type: GenericVisualizer #The component that handles multiple states for the sprite
-      visuals:
-        enum.AmmoVisuals.HasAmmo:
-          unshaded:
-            True: { state: base-unshaded }
-            False: { state: base-unshaded-off }
+- type: soundCollection
+  id: PudgeStep
+  files:
+  - /Audio/_Impstation/Pudge/PudgeStep.ogg
+
+- type: emoteSounds
+  id: Pudge
+  sound:
+    path: /Audio/_Impstation/Pudge/PudgeYell.ogg
 
 - type: entity
   id: MeatHookPudge
@@ -93,7 +72,7 @@
       removalTime: 20
       deleteOnRemove: false
       sound:
-        path: /Audio/Effects/Fluids/splat.ogg
+        path: /Audio/_Impstation/Pudge/PudgeMeatHook.ogg
     - type: Projectile #The component that handles the fact that this was fired from something
       deleteOnCollide: false
       damage:
@@ -114,7 +93,7 @@
   - type: WorldTargetAction
     useDelay: 5
     raiseOnUser: true
-    range: 10
+    range: 15
     itemIconStyle: NoItem
     icon:
       sprite: _Impstation/Pudge/pudge_actions.rsi
@@ -130,8 +109,8 @@
     useDelay: 10
     itemIconStyle: NoItem
     icon:
-      sprite: _Goobstation/Changeling/changeling_abilities.rsi
-      state: tentacle
+      sprite: _Impstation/Pudge/pudge_actions.rsi
+      state: rot
     event: !type:PudgeRotEvent {}
 
 - type: entity
@@ -140,11 +119,11 @@
   description: Pudge covers himself with a layer of flesh that blocks damage of any type taken from any source.
   components:
   - type: InstantAction
-    useDelay: 5
+    useDelay: 20
     itemIconStyle: NoItem
     icon:
-      sprite: _Goobstation/Changeling/changeling_abilities.rsi
-      state: chitinous_armor
+      sprite: _Impstation/Pudge/pudge_actions.rsi
+      state: meatshield
     event: !type:PudgeMeatShieldEvent {}
 
 - type: entity
@@ -153,7 +132,7 @@
   description: CHANNELED - Pudge chows down on an enemy unit, disabling it and dealing damage over time. Damage is increased by Pudge's Strength and heals him for the total amount. Pudge pulls the unit at a rate of 75 units, up to a minimum of 125 range.
   components:
   - type: EntityTargetAction
-    useDelay: 5
+    useDelay: 15
     whitelist:
       components:
       - Body
@@ -161,8 +140,8 @@
     interactOnMiss: false
     itemIconStyle: NoItem
     icon:
-      sprite: _Goobstation/Changeling/changeling_abilities.rsi
-      state: armblade
+      sprite: _Impstation/Pudge/pudge_actions.rsi
+      state: dismember
     event: !type:PudgeDismemberEvent {}
 
 - type: htnCompound
@@ -181,15 +160,10 @@
   components:
   - type: TimedDespawn
     lifetime: 1.92
-  - type: Sprite
-    layers:
-    - sprite: _Impstation/CosmicCult/Effects/ability_impositionvfx.rsi
-      state: vfx
-      shader: unshaded
     netsync: false
     drawdepth: Mobs
   - type: PointLight
-    color: "#42a4ae"
+    color: "#e50000"
     radius: 10
     energy: 6
     castShadows: true
