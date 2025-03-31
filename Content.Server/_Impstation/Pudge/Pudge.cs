@@ -76,7 +76,13 @@ public sealed partial class PudgeSystem : EntitySystem
     #region meat's hook
     private void OnMeatHook(EntityUid uid, ActionsComponent actions, ref PudgeMeatHookEvent args)
     {
-        var ent = Spawn("MeatHookPudge", _transform.GetMapCoordinates(args.Performer));
+        var pudge = args.Performer;
+
+        EnsureComp<ProjectileComponent>(pudge, out var iFrame); //this is so stupid but its for a guy that will only be in game one day so who cares
+        iFrame.ProjectileSpent = true;
+        //Timer.Spawn(TimeSpan.FromSeconds(0.5), () => RemComp(pudge, iFrame));
+
+        var ent = Spawn("MeatHookPudge", _transform.GetMapCoordinates(pudge));
         _audio.PlayPvs(_meatHookVOSFX, uid, AudioParams.Default.WithVolume(-3f));
         _audio.PlayPvs(_meatHookSFX, uid, AudioParams.Default.WithVolume(-3f));
 

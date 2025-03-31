@@ -79,7 +79,7 @@
       deleteOnCollide: false
       damage:
         types:
-          Piercing: 75
+          Piercing: 15
     - type: Sprite
       noRot: false
       sprite: _Impstation/Pudge/fishingrod_pudge.rsi
