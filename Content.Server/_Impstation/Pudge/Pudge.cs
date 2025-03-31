@@ -26,6 +26,8 @@ using Robust.Shared.Physics;
 using Robust.Shared.Timing;
 using Robust.Shared.Network;
 using Robust.Shared.Physics.Dynamics.Joints;
+using Robust.Shared.Map;
+using Content.Shared.Coordinates.Helpers;
 
 namespace Content.Server._Impstation.Pudge;
 
@@ -45,6 +47,7 @@ public sealed partial class PudgeSystem : EntitySystem
     [Dependency] private readonly SharedJointSystem _joints = default!;
     [Dependency] private readonly INetManager _netManager = default!;
     [Dependency] private readonly SharedPhysicsSystem _physics = default!;
+    [Dependency] private readonly IMapManager _mapMan = default!;
     private readonly SoundSpecifier _meatHookSFX = new SoundPathSpecifier("/Audio/_Impstation/Pudge/PudgeHook.ogg");
     private readonly SoundSpecifier _meatHookVOSFX = new SoundPathSpecifier("/Audio/_Impstation/Pudge/PudgeHookVO.ogg");
     private readonly SoundSpecifier _rotSFX = new SoundPathSpecifier("/Audio/_Impstation/Pudge/PudgeRotVO.ogg");
@@ -76,13 +79,12 @@ public sealed partial class PudgeSystem : EntitySystem
     #region meat's hook
     private void OnMeatHook(EntityUid uid, ActionsComponent actions, ref PudgeMeatHookEvent args)
     {
-        var pudge = args.Performer;
+        var xform = Transform(args.Performer);
+        // Get the tile in front of the pudge
+        var offsetValue = xform.LocalRotation.ToWorldVec();
+        var coords = xform.Coordinates.Offset(offsetValue).SnapToGrid(EntityManager, _mapMan);
 
-        EnsureComp<ProjectileComponent>(pudge, out var iFrame); //this is so stupid but its for a guy that will only be in game one day so who cares
-        iFrame.ProjectileSpent = true;
-        //Timer.Spawn(TimeSpan.FromSeconds(0.5), () => RemComp(pudge, iFrame));
-
-        var ent = Spawn("MeatHookPudge", _transform.GetMapCoordinates(pudge));
+        var ent = Spawn("MeatHookPudge", coords);
         _audio.PlayPvs(_meatHookVOSFX, uid, AudioParams.Default.WithVolume(-3f));
         _audio.PlayPvs(_meatHookSFX, uid, AudioParams.Default.WithVolume(-3f));
 
