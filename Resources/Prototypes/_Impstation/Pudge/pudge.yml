@@ -58,6 +58,8 @@
   id: Pudge
   sound:
     path: /Audio/_Impstation/Pudge/PudgeYell.ogg
+    params:
+      volume: 0
 
 - type: entity
   id: MeatHookPudge
@@ -72,7 +74,7 @@
       removalTime: 20
       deleteOnRemove: false
       sound:
-        path: /Audio/_Impstation/Pudge/PudgeMeatHook.ogg
+        path: /Audio/_Impstation/Pudge/PudgeHook.ogg
     - type: Projectile #The component that handles the fact that this was fired from something
       deleteOnCollide: false
       damage:
