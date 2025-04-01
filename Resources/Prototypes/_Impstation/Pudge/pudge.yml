@@ -10,7 +10,7 @@
     layers:
     - map: [ "enum.DamageStateVisualLayers.Base" ]
       state: pudge
-  - type: Vocal #TODO: Pudge sounds
+  - type: Vocal
     sounds:
       Unsexed: Pudge
   - type: MobThresholds
@@ -33,7 +33,7 @@
         Blunt: 12
         Slash: 10
         Piercing: 3
-  - type: ActionGrant #TODO: Pudge actions
+  - type: ActionGrant
     actions:
     - ActionPudgeMeatHook
     - ActionPudgeRot
@@ -43,6 +43,8 @@
   - type: FootstepModifier
     footstepSoundCollection:
       collection: PudgeStep
+      params:
+        volume: -3
   - type: Tag
     tags:
     - DoorBumpOpener
@@ -59,7 +61,7 @@
   sound:
     path: /Audio/_Impstation/Pudge/PudgeYell.ogg
     params:
-      volume: 0
+      volume: -3
 
 - type: entity
   id: MeatHookPudge
