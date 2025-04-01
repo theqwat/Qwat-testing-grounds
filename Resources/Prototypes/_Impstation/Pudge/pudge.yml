@@ -72,8 +72,8 @@
     - type: FishingProjectile #The component that's used for joint stuff
       jointLength: 1.5
     - type: EmbeddableProjectile #The component that tells the item to embed onto things
-      autoRemoveDuration: 7
-      removalTime: 7
+      autoRemoveDuration: 2
+      removalTime: 2
       deleteOnRemove: true
       sound:
         path: /Audio/_Impstation/Pudge/PudgeHook.ogg
