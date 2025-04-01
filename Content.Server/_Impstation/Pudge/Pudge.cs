@@ -28,6 +28,7 @@ using Robust.Shared.Network;
 using Robust.Shared.Physics.Dynamics.Joints;
 using Robust.Shared.Map;
 using Content.Shared.Coordinates.Helpers;
+using Content.Shared.Weapons.Ranged.Systems;
 
 namespace Content.Server._Impstation.Pudge;
 
@@ -48,6 +49,7 @@ public sealed partial class PudgeSystem : EntitySystem
     [Dependency] private readonly INetManager _netManager = default!;
     [Dependency] private readonly SharedPhysicsSystem _physics = default!;
     [Dependency] private readonly IMapManager _mapMan = default!;
+    [Dependency] private readonly SharedGunSystem _gun = default!;
     private readonly SoundSpecifier _meatHookSFX = new SoundPathSpecifier("/Audio/_Impstation/Pudge/PudgeHook.ogg");
     private readonly SoundSpecifier _meatHookVOSFX = new SoundPathSpecifier("/Audio/_Impstation/Pudge/PudgeHookVO.ogg");
     private readonly SoundSpecifier _rotSFX = new SoundPathSpecifier("/Audio/_Impstation/Pudge/PudgeRotVO.ogg");
@@ -79,14 +81,22 @@ public sealed partial class PudgeSystem : EntitySystem
     #region meat's hook
     private void OnMeatHook(EntityUid uid, ActionsComponent actions, ref PudgeMeatHookEvent args)
     {
+        var pudge = args.Performer;
+
         var xform = Transform(args.Performer);
         // Get the tile in front of the pudge
         var offsetValue = xform.LocalRotation.ToWorldVec();
         var coords = xform.Coordinates.Offset(offsetValue).SnapToGrid(EntityManager, _mapMan);
 
-        var ent = Spawn("MeatHookPudge", coords);
         _audio.PlayPvs(_meatHookVOSFX, uid, AudioParams.Default.WithVolume(-3f));
         _audio.PlayPvs(_meatHookSFX, uid, AudioParams.Default.WithVolume(-3f));
+
+        var toCoords = args.Target;
+        var userVelocity = _physics.GetMapLinearVelocity(pudge);
+
+        var ent = Spawn("MeatHookPudge", coords);
+        var direction = toCoords.ToMapPos(EntityManager, _transform) -
+                        coords.ToMapPos(EntityManager, _transform);
 
         EnsureComp<MeatHookComponent>(ent, out var component);
         component.Projectile = ent;
@@ -100,6 +110,8 @@ public sealed partial class PudgeSystem : EntitySystem
         TryComp<AppearanceComponent>(uid, out var appearance);
         _appearance.SetData(uid, SharedTetherGunSystem.TetherVisualsStatus.Key, false, appearance);
         Dirty(ent, component);
+
+        _gun.ShootProjectile(ent, direction, userVelocity, pudge, pudge);
     }
 
     public override void Update(float frameTime)
@@ -119,51 +131,43 @@ public sealed partial class PudgeSystem : EntitySystem
                 }
                 continue;
             }
-            if (!TryComp<JointComponent>(uid, out var jointComp) ||
-                !jointComp.GetJoints.TryGetValue(GrapplingJoint, out var joint) ||
-                joint is not DistanceJoint distance)
+            var pudgeQuery = EntityQueryEnumerator<JointComponent>();
+
+            while (pudgeQuery.MoveNext(out var pudge, out var jointComp))
             {
-                SetReeling(uid, grappling, false, null);
-                continue;
-            }
+                if (!jointComp.GetJoints.TryGetValue(GrapplingJoint, out var joint) ||
+                    joint is not DistanceJoint distance)
+                {
+                    SetReeling(uid, grappling, false);
+                    continue;
+                }
 
-            // TODO: This should be on engine.
-            distance.MaxLength = MathF.Max(distance.MinLength, distance.MaxLength - grappling.ReelRate * frameTime);
-            distance.Length = MathF.Min(distance.MaxLength, distance.Length);
+                // TODO: This should be on engine.
+                distance.MaxLength = MathF.Max(distance.MinLength, distance.MaxLength - grappling.ReelRate * frameTime);
+                distance.Length = MathF.Min(distance.MaxLength, distance.Length);
 
-            _physics.WakeBody(joint.BodyAUid);
-            _physics.WakeBody(joint.BodyBUid);
+                _physics.WakeBody(joint.BodyAUid);
+                _physics.WakeBody(joint.BodyBUid);
 
-            if (jointComp.Relay != null)
-            {
-                _physics.WakeBody(jointComp.Relay.Value);
-            }
+                if (jointComp.Relay != null)
+                {
+                    _physics.WakeBody(jointComp.Relay.Value);
+                }
 
-            Dirty(uid, jointComp);
+                Dirty(pudge, jointComp);
 
-            if (distance.MaxLength.Equals(distance.MinLength))
-            {
-                SetReeling(uid, grappling, false, null);
+                if (distance.MaxLength.Equals(distance.MinLength))
+                {
+                    SetReeling(uid, grappling, false);
+                }
             }
         }
     }
 
-    private void SetReeling(EntityUid uid, MeatHookComponent component, bool value, EntityUid? user)
+    private void SetReeling(EntityUid uid, MeatHookComponent component, bool value)
     {
         if (component.Reeling == value)
             return;
-        if (value)
-        {
-            if (Timing.IsFirstTimePredicted)
-                component.Stream = _audio.PlayPredicted(component.ReelSound, uid, user)?.Entity;
-        }
-        else
-        {
-            if (Timing.IsFirstTimePredicted)
-            {
-                component.Stream = _audio.Stop(component.Stream);
-            }
-        }
 
         component.Reeling = value;
         Dirty(uid, component);
@@ -188,11 +192,19 @@ public sealed partial class PudgeSystem : EntitySystem
         // Setting velocity directly for mob movement fucks this so need to make them aware of it.
         // joint.Breakpoint = 4000f;
         Dirty(args.Weapon, jointComp);
+
+        SetReeling(uid, component, true);
     }
 
     private void OnRemoveEmbed(EntityUid uid, MeatHookComponent component, RemoveEmbedEvent args)
     {
-        return;
+        if (TryComp<EmbeddableProjectileComponent>(uid, out var projectile))
+        {
+            if (projectile.EmbeddedIntoUid != null)
+            {
+                _joints.ClearJoints(projectile.EmbeddedIntoUid.Value);
+            }
+        }
     }
     # endregion
 
