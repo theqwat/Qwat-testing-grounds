@@ -36,17 +36,20 @@
 # goob edit
 - type: entity
   id: ImmovableVoidRod
+  parent: ImmovableVoidRod
   name: immovable void rod
   description: You can sense that it's hungry. That's usually a bad sign.
   components:
-  - type: Clickable
-  - type: InteractionOutline
-  - type: MovementIgnoreGravity
   - type: Sprite
     sprite: _Goobstation/Heretic/abilities_heretic.rsi
     state: immovable_rod
     noRot: false
-  - type: ImmovableVoidRod
+  - type: ImmovableVoidRod 
+    destroyTiles: false
+    shouldGib: false
+    damage:
+      types:
+        Blunt: 190
   - type: Physics
     bodyType: Dynamic
     linearDamping: 0
