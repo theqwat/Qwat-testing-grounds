@@ -18,3 +18,6 @@ reagent-desc-brutoxidone = A cryogenics chemical. Used to treat severe brute dam
 
 reagent-name-clarified-phalanximine = clarified phalanximine
 reagent-desc-clarified-phalanximine = Phalanximine, refined through a dubiously legal and morally questionable technique. Reverses cellular damage at the same effectiveness as Phalanximine, with substantially lowered downsides.
+
+reagent-name-eldritch = Eldritch Essncnce
+reagent-desc-eldritch = Strange liquid that defis the laws of physics

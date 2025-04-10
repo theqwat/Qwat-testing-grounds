@@ -40,3 +40,4 @@ flavor-complex-shimmeringblood = sweet and slightly creamy
 flavor-complex-feverdream = like you're losing your mind
 
 flavor-complex-entropy = like your tastebuds are unravelling
+flavor-complex-eldritch = Ag'hsj'saje'sh

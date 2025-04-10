@@ -152,3 +152,8 @@
   id: feverdream
   flavorType: Complex
   description: flavor-complex-feverdream
+
+- type: flavor
+  id: eldrich
+  flavorType: Complex
+  description: flavor-complex-eldritch
