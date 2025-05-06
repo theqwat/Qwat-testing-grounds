@@ -4,20 +4,16 @@
   description: Fire off a cone of ice in front of you.
   categories: [ HideSpawnMenu ]
   components:
-  - type: WorldTargetAction
+  - type: InstantAction
     useDelay: 15
     itemIconStyle: NoItem
-    checkCanAccess: false
-    raiseOnUser: true
-    range: 30
     icon:
       sprite: _Goobstation/Heretic/abilities_heretic.rsi
       state: void_blast
-    event: !type:ProjectileSpellEvent
-      prototype: ImmovableVoidRod
-      speech: heretic-speech-void-blast
+    event: !type:HereticVoidBlastEvent
   - type: HereticAction
     requireMagicItem: true
+    messageLoc: heretic-speech-void-blast
 
 - type: entity
   id: ActionHereticVoidPhase
@@ -54,4 +50,3 @@
   - type: HereticAction
     requireMagicItem: true
     messageLoc: heretic-speech-void-pull
-
