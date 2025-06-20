@@ -171,8 +171,7 @@ public sealed partial class SupermatterComponent : Component
 
     /// <summary>
     /// Modifier to damage taken during supermatter reactions, soothing the supermatter when a psychologist is nearby
-    /// </summary>
-    [DataField]
+    /// </summary> 
     public float PsyCoefficient;
 
     /// <summary>
@@ -472,7 +471,7 @@ public static class SupermatterGasData
     {
         { Gas.Oxygen,        new(1.5f, 1f,    1f,  1f) },
         { Gas.Nitrogen,      new(0f,   -1.5f, -1f, 1f) },
-        { Gas.CarbonDioxide, new(0f,   0.1f,  1f,  1f) },
+        { Gas.CarbonDioxide, new(0f,   0.1f,  3f,  1f) },
         { Gas.Plasma,        new(4f,   15f,   1f,  1f) },
         { Gas.Tritium,       new(30f,  10f,   1f,  1f) },
         { Gas.WaterVapor,    new(2f,   12f,   1f,  1f) },
